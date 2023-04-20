@@ -115,7 +115,7 @@ class EulerDiffEqSolver:
         Implement reverse SDE/ODE Euler solver
         """
         
-        
+
         """
         x_mean = deterministic part
         x = x_mean + noise (yet another noise sampling)
@@ -123,6 +123,6 @@ class EulerDiffEqSolver:
         dt = self.rsde.T / self.rsde.N
         dw = torch.randn_like(x) * np.sqrt(dt)
         drift, diffusion = self.rsde.sde(x, t, y)
-        x_mean = x + drift * dt
+        x_mean = x - drift * dt # minus, as we go backward in time (dt < 0)
         x = x_mean + diffusion * dw
         return x, x_mean
