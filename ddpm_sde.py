@@ -14,6 +14,7 @@ class DDPM_SDE:
         self.N = config.sde.N
         self.beta_0 = config.sde.beta_min
         self.beta_1 = config.sde.beta_max
+        self.ndim = 3 # C, H, W
 
     @property
     def T(self):
@@ -24,8 +25,8 @@ class DDPM_SDE:
         Calculate drift coeff. and diffusion coeff. in forward SDE
         """
         beta = (self.beta_1 - self.beta_0)*t + self.beta_0 # linear beta(t)
-        dims = [1] * (x.dim()-1)
-        beta = beta.view(-1, *dims) # unsqueeze beta to have same num of dims as x
+        dims = [1] * self.ndim
+        beta = beta.view(-1, *dims) # unsqueeze beta to have same num of dims as object
         drift = -beta * x / 2
         diffusion = torch.sqrt(beta)
         return drift, diffusion
@@ -35,8 +36,8 @@ class DDPM_SDE:
         Calculate marginal q(x_t|x_0)'s mean and std
         """
         B = (self.beta_1 - self.beta_0) * t**2/2 + self.beta_0 * t
-        dims = [1] * (x_0.dim()-1)
-        B = B.view(-1, *dims) # unsqueeze B to have same num of dims as x_0
+        dims = [1] * self.ndim
+        B = B.view(-1, *dims) # unsqueeze B to have same num of dims as object
         mean = torch.exp(-B/2) * x_0
         std  = torch.sqrt(1-torch.exp(-B))
         return mean, std
@@ -46,6 +47,8 @@ class DDPM_SDE:
         Calculate marginal q(x_t|x_0)'s std
         """
         B = (self.beta_1 - self.beta_0) * t**2/2 + self.beta_0 * t
+        dims = [1] * self.ndim
+        B = B.view(-1, *dims) # unsqueeze B to have same num of dims as object
         std = torch.sqrt(1-torch.exp(-B))
         return std
 
