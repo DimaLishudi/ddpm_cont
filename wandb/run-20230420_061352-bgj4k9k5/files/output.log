@@ -1,0 +1,36 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  0%|▍                                                                                                                                                                       | 120/50000 [11:02<76:31:19,  5.52s/it]
+Traceback (most recent call last):
+  File "/home/dima/DL/ddpm_hw/train_ddpm_cont.py", line 10, in <module>
+    diffusion.train()
+  File "/home/dima/DL/ddpm_hw/diffusion.py", line 172, in train
+    X = X.to(self.device)
+KeyboardInterrupt
