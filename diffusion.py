@@ -251,9 +251,9 @@ class DiffusionRunner:
             """
             x = torch.randn(shape, device=device)
             T, N = self.sde.T, self.sde.N
-            t_range = (T - np.arange(T)) / N
+            t_range = T * (N - np.arange(N)) / N
             for t in t_range:
-                t = torch.ones(batch_size, device=device)*t
+                t = torch.ones(batch_size, device=device) * t
                 x, _ = self.diff_eq_solver.step(x, t, labels)
         pred_images = x
         return self.inverse_scaler(pred_images)
