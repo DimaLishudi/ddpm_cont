@@ -249,7 +249,7 @@ class DiffusionRunner:
             Implement cycle for Euler RSDE sampling w.r.t labels 
             labels = None if uncond. gen is used
             """
-            x = torch.randn(batch_size, device=device)
+            x = torch.randn(shape, device=device)
             T, N = self.sde.T, self.sde.N
             t_range = (T - np.arange(T)) / N
             for t in t_range:
