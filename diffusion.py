@@ -303,7 +303,7 @@ class DiffusionRunner:
 
             logits = self.classifier(x_t, t)
             pred_labels = logits.argmax(dim=-1)
-            loss = classifier_loss(y, logits)
+            loss = classifier_loss(logits, y)
             return loss, pred_labels
 
         self.set_data_generator()
