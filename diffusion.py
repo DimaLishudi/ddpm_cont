@@ -328,7 +328,7 @@ class DiffusionRunner:
             """
             X, y = next(train_generator)
             loss, acc = get_logits(X, y)
-            self.log_metric('cross entropy', 'train', loss.item())
+            self.log_metric('cross_entropy', 'train', loss.item())
             self.log_metric('accuracy', 'train', acc)
             loss.backward()
             classifier_optim.step()
