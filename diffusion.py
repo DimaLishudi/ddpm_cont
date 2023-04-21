@@ -306,7 +306,7 @@ class DiffusionRunner:
 
             logits = self.classifier(x_t, t)
             pred_labels = logits.argmax(dim=-1)
-            accuracy = (y==pred_labels).mean()
+            accuracy = (y==pred_labels).sum() / y.shape[0]
             loss = classifier_loss(logits, y)
             # I return accuracy instead of labels
             return loss, accuracy
