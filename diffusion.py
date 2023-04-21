@@ -231,8 +231,11 @@ class DiffusionRunner:
             """
             calculate likelihood_score with torch.autograd.grad
             """
-            outs = self.classifier(x, t)
-            likelihood_score = torch.autograd.grad(outs[y], x) # TOFIX
+            x.requires_grad = True
+            bs = y.shape[0]
+            outs = self.classifier(x, t)[torch.arange(bs), y]
+            likelihood_score = torch.autograd.grad(outs.sum(), x)[0]
+            x.requires_grad = False
             return likelihood_score
 
         self.set_conditional_sampling(classifier_grad_fn, T=T)
@@ -322,6 +325,9 @@ class DiffusionRunner:
             """
             X, y = next(train_generator)
             loss, logits = get_logits(X, y)
+            acc = (y==logits).sum()
+            self.log_metric('cross entropy', 'train', loss.item())
+            self.log_metric('accuracy', 'train', acc/X.shape[0])
             loss.backward()
             classifier_optim.step()
             classifier_optim.zero_grad()
