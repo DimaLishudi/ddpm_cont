@@ -227,16 +227,16 @@ class DiffusionRunner:
 
     def set_classifier(self, classifier: torch.nn.Module, T: float = 1.0) -> None:
         self.classifier = classifier
+        @torch.enable_grad()
         def classifier_grad_fn(x, t, y):
             """
             calculate likelihood_score with torch.autograd.grad
             """
-            with torch.enable_grad():
-                x.requires_grad = True
-                bs = y.shape[0]
-                outs = self.classifier(x, t)[torch.arange(bs), y]
-                likelihood_score = torch.autograd.grad(outs.sum(), x)[0]
-                x.requires_grad = False
+            x.requires_grad = True
+            bs = y.shape[0]
+            outs = self.classifier(x, t)[torch.arange(bs), y]
+            likelihood_score = torch.autograd.grad(outs.sum(), x)[0]
+            x.requires_grad = False
             return likelihood_score
 
         self.set_conditional_sampling(classifier_grad_fn, T=T)
