@@ -343,7 +343,7 @@ class DiffusionRunner:
                 valid_count = 0
                 classifier.eval()
                 with torch.no_grad():
-                    for X, y in self.dataget.valid_loader():
+                    for X, y in self.datagen.valid_loader():
                         bs = y.shape[0]
                         loss, acc = get_logits(X, y)
                         valid_loss += loss * bs
