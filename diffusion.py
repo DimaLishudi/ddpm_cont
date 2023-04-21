@@ -306,8 +306,10 @@ class DiffusionRunner:
 
             logits = self.classifier(x_t, t)
             pred_labels = logits.argmax(dim=-1)
+            accuracy = (y==pred_labels).mean()
             loss = classifier_loss(logits, y)
-            return loss, pred_labels
+            # I return accuracy instead of labels
+            return loss, accuracy
 
         self.set_data_generator()
         train_generator = self.datagen.sample_train()
@@ -324,10 +326,9 @@ class DiffusionRunner:
             train classifier
             """
             X, y = next(train_generator)
-            loss, logits = get_logits(X, y)
-            acc = (y==logits).sum()
+            loss, acc = get_logits(X, y)
             self.log_metric('cross entropy', 'train', loss.item())
-            self.log_metric('accuracy', 'train', acc/X.shape[0])
+            self.log_metric('accuracy', 'train', acc)
             loss.backward()
             classifier_optim.step()
             classifier_optim.zero_grad()
@@ -343,9 +344,9 @@ class DiffusionRunner:
                 with torch.no_grad():
                     for X, y in self.dataget.valid_loader():
                         bs = y.shape[0]
-                        loss, labels = get_logits(X, y)
+                        loss, acc = get_logits(X, y)
                         valid_loss += loss * bs
-                        valid_accuracy += (labels==y).sum()
+                        valid_accuracy += acc * bs
                         valid_count += bs
                 valid_loss = valid_loss / valid_count
                 valid_accuracy = valid_accuracy / valid_count
