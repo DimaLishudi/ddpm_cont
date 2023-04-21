@@ -80,9 +80,9 @@ class DiffusionRunner:
         """
         calculate score w.r.t noisy X and t
         """
-        if y is None:
-            noise = self.model(input_x, input_t)
-            score = -noise / self.sde.marginal_std(input_t) # or plus?
+        assert y is None
+        noise = self.model(input_x, input_t)
+        score = -noise / self.sde.marginal_std(input_t)
         return score
 
     def sample_time(self, batch_size: int, eps: float = 1e-5):
@@ -213,6 +213,9 @@ class DiffusionRunner:
             """
             define posterior_score w.r.t T
             """
+            score_cls = classifier_grad_fn(x, t, y) / T
+            score_diff = self.calc_score(x, t)
+            posterior_score_T = score_cls + score_diff
             return posterior_score_T
         
         self.diff_eq_solver = EulerDiffEqSolver(
@@ -228,6 +231,8 @@ class DiffusionRunner:
             """
             calculate likelihood_score with torch.autograd.grad
             """
+            outs = self.classifier(x, t)
+            likelihood_score = torch.autograd.grad(outs[y], x) # TOFIX
             return likelihood_score
 
         self.set_conditional_sampling(classifier_grad_fn, T=T)
@@ -291,9 +296,14 @@ class DiffusionRunner:
 
         def get_logits(X, y):
             t = self.sample_time(X.size(0)).to(device)
+            X, y = X.to(device), y.to(device)
+            mean, std = self.sde.marginal_prob(X, t)
+            noise = torch.randn_like(X)
+            x_t = mean + std * noise
 
-            """calc logits"""
-            
+            logits = self.classifier(x_t, t)
+            pred_labels = logits.argmax(dim=-1)
+            loss = classifier_loss(y, logits)
             return loss, pred_labels
 
         self.set_data_generator()
@@ -310,6 +320,11 @@ class DiffusionRunner:
             """
             train classifier
             """
+            X, y = next(train_generator)
+            loss, logits = get_logits(X, y)
+            loss.backward()
+            classifier_optim.step()
+            classifier_optim.zero_grad()
 
             if iter_idx % self.config.classifier.snapshot_freq == 0:
                 self.snapshot(labels=labels)
@@ -320,9 +335,12 @@ class DiffusionRunner:
                 valid_count = 0
                 classifier.eval()
                 with torch.no_grad():
-                    """
-                    validate classifier
-                    """
+                    for X, y in self.dataget.valid_loader():
+                        bs = y.shape[0]
+                        loss, labels = get_logits(X, y)
+                        valid_loss += loss * bs
+                        valid_accuracy += (labels==y).sum()
+                        valid_count += bs
                 valid_loss = valid_loss / valid_count
                 valid_accuracy = valid_accuracy / valid_count
                 self.log_metric('cross_entropy', 'valid', valid_loss)
