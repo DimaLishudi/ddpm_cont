@@ -213,7 +213,7 @@ class DiffusionRunner:
             """
             define posterior_score w.r.t T
             """
-            score_cls = classifier_grad_fn(x, t, y) / T
+            score_cls = classifier_grad_fn(x, t, y) / T # d/dx (logits/T) = 1/T * d/dx(logits)
             score_diff = self.calc_score(x, t)
             posterior_score_T = score_cls + score_diff
             return posterior_score_T
