@@ -234,8 +234,9 @@ class DiffusionRunner:
             """
             x.requires_grad = True
             bs = y.shape[0]
-            outs = self.classifier(x, t)[torch.arange(bs), y]
-            likelihood_score = torch.autograd.grad(outs.sum(), x)[0]
+            logits = self.classifier(x, t)
+            log_probs = torch.nn.LogSoftmax(dim=-1)(logits)[torch.arange(bs), y]
+            likelihood_score = torch.autograd.grad(log_probs.sum(), x)[0]
             x.requires_grad = False
             return likelihood_score
 
@@ -335,7 +336,9 @@ class DiffusionRunner:
             classifier_optim.zero_grad()
 
             if iter_idx % self.config.classifier.snapshot_freq == 0:
+                classifier.eval()
                 self.snapshot(labels=labels)
+                classifier.train()
 
             if iter_idx % self.config.classifier.eval_freq == 0:
                 valid_loss = 0
@@ -356,10 +359,12 @@ class DiffusionRunner:
                 classifier.train()
 
             if iter_idx % self.config.classifier.checkpoint_freq == 0:
+                classifier.eval()
                 torch.save(
                     classifier.state_dict(),
                     self.config.classifier.checkpoint_path
                 )
+                classifier.train()
 
         classifier.eval()
         torch.save(
