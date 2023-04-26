@@ -110,7 +110,7 @@ class EulerDiffEqSolver:
         self.ode_sampling = ode_sampling
         self.rsde = sde.reverse(score_fn, ode_sampling)
 
-    def step(self, x, t, y=None):
+    def step(self, x, t, y=None, backward=False):
         """
         Implement reverse SDE/ODE Euler solver
         """
@@ -123,6 +123,8 @@ class EulerDiffEqSolver:
         dt = self.rsde.T / self.rsde.N
         dw = torch.randn_like(x) * np.sqrt(dt)
         drift, diffusion = self.rsde.sde(x, t, y)
-        x_mean = x - drift * dt # minus, as we go backward in time (dt < 0)
+        if backward:
+            dt = -dt # minus, as we go backward in time
+        x_mean = x + drift * dt
         x = x_mean + diffusion * dw
         return x, x_mean
